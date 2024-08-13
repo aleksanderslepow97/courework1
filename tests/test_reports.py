@@ -5,7 +5,8 @@ from src.reports import spending_by_category
 
 
 def test_spending_by_category() -> None:
-    """тест для функции которая возвращает траты по заданной категории за последние три месяца (от переданной даты)."""
+    """Тест функции возвращающая траты по заданной категории
+    за последние три месяца (от переданной даты)."""
     data = DataFrame(
         [
             {
@@ -69,6 +70,4 @@ def test_spending_by_category() -> None:
 
     result = spending_by_category(data, "Переводы", "01.01.2018 20:27:51")
 
-    pd.testing.assert_frame_equal(
-        result.reset_index(drop=True), expected_result.reset_index(drop=True)
-    )
+    pd.testing.assert_frame_equal(result.reset_index(drop=True), expected_result.reset_index(drop=True))

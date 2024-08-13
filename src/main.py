@@ -1,15 +1,15 @@
 import json
 
-from src.config import setup_logger
-from src.views import (currency_rates_eur, currency_rates_usd, for_each_card,
-                       get_greeting, get_stock_prices, symbols,
+from src.config import set_logger
+from src.views import (currency_rates_eur, currency_rates_usd, for_each_card, get_greeting, get_stock_prices, symbols,
                        top_transactions_by_payment_amount, transactions)
 
-logger = setup_logger("main", "main.log")
+logger = set_logger("main", "main.log")
 
 
 def main_func(datetime_str: str) -> str:
-    """Главная функция, принимающая строку с датой и временем и возвращающая JSON-ответ."""
+    """Функция, принимающая строку с датой и временем
+    и возвращающая JSON-ответ."""
     greeting = get_greeting(datetime_str)
     cards, total_spend, cashback = for_each_card(transactions)
     top_five_transactions = top_transactions_by_payment_amount(transactions)

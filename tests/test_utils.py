@@ -7,20 +7,22 @@ from src.utils import func_user_currencies, func_user_stocks, read_excel
 
 
 def test_func_user_currencies():
-    """тест для функции которая достает из файла данные о 'пользовательских настройках' для курса валют"""
+    """Тест функции которая берет из файла данные
+    о 'пользовательских настройках' для курса валют"""
     user_currencies = func_user_currencies()
     assert user_currencies == ["USD", "EUR"]
 
 
 def test_func_user_stocks():
-    """тест для функции которая достает из файла данные о 'пользовательских настройках' для стоимости акций"""
+    """Тест функции которая берет из файла данные
+    о 'пользовательских настройках' для стоимости акций"""
     user_stocks = func_user_stocks()
     assert user_stocks == ["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"]
 
 
 @patch("pandas.read_excel")
 def test_read_excel(mock_open: Mock) -> None:
-    """тест для функции которая считывает финансовые операции с файла excel"""
+    """Тест функции считывающя финансовые операции с файла excel"""
 
     mock_open.return_value = DataFrame(
         {

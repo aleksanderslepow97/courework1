@@ -1,20 +1,21 @@
 import os
-import requests
 from datetime import datetime
-from typing import List, Optional, Tuple, Any
+from typing import Any, List, Optional, Tuple
+
+import requests
+
+from src.config import set_logger
+from src.utils import read_excel, user_currencies, user_stocks
 
 # from dotenv import load_dotenv
 
-from src.utils import read_excel, user_currencies, user_stocks
 
-
-from src.config import setup_logger
-
-logger = setup_logger("views", "views.log")
+logger = set_logger("views", "views.log")
 # load_dotenv()
 
+
 def get_greeting(datetime_str) -> str:
-    """Функция для определения времени суток на основе переданной даты и времени."""
+    """Функция определения времени на основе переданной даты и времени."""
 
     dt = datetime.strptime(datetime_str, "%d.%m.%Y %H:%M:%S")
     current_hour = dt.hour
@@ -51,17 +52,11 @@ def top_transactions_by_payment_amount(transactions: List[dict]) -> List[Any]:
     """Топ-5 транзакций по сумме платежа."""
     logger.info("func top_transactions_by_payment_amount start")
     total_spend = [
-        transaction.get("Сумма платежа")
-        for transaction in transactions
-        if transaction.get("Сумма платежа") >= 0
+        transaction.get("Сумма платежа") for transaction in transactions if transaction.get("Сумма платежа") >= 0
     ]
     top_five = sorted([spend for spend in total_spend if spend is not None], reverse=True)[:5]
 
-    last_top = [
-        transaction
-        for transaction in transactions
-        if transaction.get("Сумма платежа") in top_five
-    ]
+    last_top = [transaction for transaction in transactions if transaction.get("Сумма платежа") in top_five]
 
     if last_top:
         result = []

@@ -4,8 +4,7 @@ from unittest.mock import Mock, patch
 import pytest
 
 from src.utils import read_excel
-from src.views import (currency_rates_eur, currency_rates_usd, for_each_card,
-                       get_greeting, get_stock_prices,
+from src.views import (currency_rates_eur, currency_rates_usd, for_each_card, get_greeting, get_stock_prices,
                        top_transactions_by_payment_amount)
 
 
@@ -19,7 +18,7 @@ from src.views import (currency_rates_eur, currency_rates_usd, for_each_card,
     ],
 )
 def test_get_greeting(datetime_str: str, expected_greeting: str) -> None:
-    """тест для функции для определения времени суток на основе переданной даты и времени."""
+    """Тест функции определяющая время суток на основе переданной даты и времени."""
     assert get_greeting(datetime_str) == expected_greeting
 
 
@@ -44,10 +43,10 @@ def test_for_each_card(
     expected_total_spend: List[float],
     expected_cashback: List[float],
 ) -> None:
-    """тест для функции которая:
-    По каждой карте: последние 4 цифры карты;
-    общая сумма расходов;
-    кешбэк (1 рубль на каждые 100 рублей)."""
+    """Тест функции которая считывает по каждой карте:
+    последние 4 цифры карты;
+    общую сумму расходов;
+    кешбэки (1 рубль на каждые 100 рублей)."""
     cards, total_spend, cashback = for_each_card(transactions)
     assert cards == expected_cards
     assert total_spend == expected_total_spend
@@ -94,27 +93,23 @@ def test_data() -> List[Dict]:
 
 
 def test_top_transactions_by_payment_amount(test_data: List[Dict]) -> None:
-    """тест для функции Топ-5 транзакций по сумме платежа."""
+    """Тест функции по Топ-5 транзакций по сумме платежа."""
     assert top_transactions_by_payment_amount(transactions) == test_data
 
 
 def test_currency_rates_eur() -> None:
-    """тест для функции курса валют EUR"""
+    """Тест функции курса валют EUR"""
     mock_response = Mock()
-    mock_response.json.return_value = {
-        "conversion_rates": {"RUB": 93.2726, "EUR": 0.85}
-    }
+    mock_response.json.return_value = {"conversion_rates": {"RUB": 93.2726, "EUR": 0.85}}
     with patch("requests.get", return_value=mock_response):
         result = currency_rates_eur()
         assert result == 93.2726
 
 
 def test_currency_rates_usd() -> None:
-    """тест для функции курса валют usd"""
+    """Тест функции курса валют usd"""
     mock_response = Mock()
-    mock_response.json.return_value = {
-        "conversion_rates": {"RUB": 85.1446, "EUR": 0.85}
-    }
+    mock_response.json.return_value = {"conversion_rates": {"RUB": 85.1446, "EUR": 0.85}}
     with patch("requests.get", return_value=mock_response):
         result = currency_rates_usd()
         assert result == 85.1446
@@ -132,8 +127,6 @@ def test_data_two() -> List[Dict]:
 
 
 def test_get_stock_prices(test_data_two: List[Dict]) -> None:
-    """тест для функции которая получает стоимости акций по списку символов компаний"""
-    assert (
-        get_stock_prices(symbols=["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"])
-        == test_data_two
-    )
+    """Тест функции получющая стоимость акций
+     по списку символов компаний"""
+    assert get_stock_prices(symbols=["AAPL", "AMZN", "GOOGL", "MSFT", "TSLA"]) == test_data_two

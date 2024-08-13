@@ -3,10 +3,10 @@ from typing import Optional
 
 import pandas as pd
 
-from src.config import setup_logger
+from src.config import set_logger
 from src.utils import read_excel
 
-logger = setup_logger("reports", "reports.log")
+logger = set_logger("reports", "reports.log")
 
 transactions_data = read_excel("../data/operations.xls")
 transactions = pd.DataFrame(transactions_data)
@@ -25,10 +25,9 @@ def report_to_file_default(func):
 
 
 @report_to_file_default
-def spending_by_category(
-    transactions: pd.DataFrame, category: str, date: Optional[str] = None
-) -> pd.DataFrame:
-    """Функция возвращает траты по заданной категории за последние три месяца (от переданной даты)."""
+def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
+    """Функция возврающая траты по заданной категории
+    за последние три месяца (от переданной даты)."""
     logger.info(f"start spending by category {category}, {date}")
     if date is None:
         parsed_date = datetime.now()
@@ -40,13 +39,9 @@ def spending_by_category(
 
     end_data = parsed_date - timedelta(days=90)
 
-    transactions = transactions[
-        pd.to_datetime(transactions["Дата операции"], dayfirst=True) <= parsed_date
-    ]
+    transactions = transactions[pd.to_datetime(transactions["Дата операции"], dayfirst=True) <= parsed_date]
 
-    transactions = transactions[
-        pd.to_datetime(transactions["Дата операции"], dayfirst=True) > end_data
-    ]
+    transactions = transactions[pd.to_datetime(transactions["Дата операции"], dayfirst=True) > end_data]
     logger.info("spending_by_category done")
     return pd.DataFrame(transactions)
 
