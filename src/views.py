@@ -1,154 +1,38 @@
-import os
-from datetime import datetime
-from typing import Any, List, Optional, Tuple
+import json
+import logging
+from typing import Dict
 
-import requests
+from src.utils import (fetch_and_show_currency_rates, get_greeting, get_xlsx_data_dict, show_cards,
+                       show_top_5_transactions)
 
-from src.config import set_logger
-from src.utils import read_excel, user_currencies, user_stocks
-
-# from dotenv import load_dotenv
-
-
-logger = set_logger("views", "views.log")
-# load_dotenv()
-
-
-def get_greeting(datetime_str) -> str:
-    """Функция определения времени на основе переданной даты и времени."""
-
-    dt = datetime.strptime(datetime_str, "%d.%m.%Y %H:%M:%S")
-    current_hour = dt.hour
-    logger.info(f"func get_greeting do {datetime_str}")
-    if 6 <= current_hour < 12:
-        return "Доброе утро"
-    elif 12 <= current_hour < 18:
-        return "Добрый день"
-    elif 18 <= current_hour < 24:
-        return "Добрый вечер"
-    else:
-        return "Доброй ночи"
+logger = logging.getLogger("main_page.log")
+file_handler = logging.FileHandler("main_page.log", "w")
+file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
 
-transactions = read_excel("../data/operations.xls")
-
-
-def for_each_card(transactions: List[dict]) -> Tuple[List[str | None], List[Any | None], List[Any | None]]:
-    """По каждой карте: последние 4 цифры карты;
-    общая сумма расходов;
-    кешбэк (1 рубль на каждые 100 рублей)."""
-    logger.info("func for_each_card start")
-    cards = [transaction.get("Номер карты") for transaction in transactions]
-    total_spend = [transaction.get("Сумма платежа") for transaction in transactions]
-    cashback = [transaction.get("Сумма платежа") // 100 for transaction in transactions]
-    logger.info("func for_each_card done")
-    return cards, total_spend, cashback
-
-
-# print(for_each_card(transactions))
-
-
-def top_transactions_by_payment_amount(transactions: List[dict]) -> List[Any]:
-    """Топ-5 транзакций по сумме платежа."""
-    logger.info("func top_transactions_by_payment_amount start")
-    total_spend = [
-        transaction.get("Сумма платежа") for transaction in transactions if transaction.get("Сумма платежа") >= 0
-    ]
-    top_five = sorted([spend for spend in total_spend if spend is not None], reverse=True)[:5]
-
-    last_top = [transaction for transaction in transactions if transaction.get("Сумма платежа") in top_five]
-
-    if last_top:
-        result = []
-        for transaction in last_top[:5]:
-            result.append(
-                {
-                    "date": transaction["Дата операции"],
-                    "amount": transaction["Сумма платежа"],
-                    "category": transaction["Категория"],
-                    "description": transaction["Описание"],
-                }
-            )
-        logger.info("func top_transactions_by_payment_amount done")
-        return result
-    else:
-        logger.info("func top_transactions_by_payment_amount done")
-        return []
-
-
-# print(top_transactions_by_payment_amount(transactions))
-
-
-def currency_rates_usd() -> Optional[float]:
-    """Курс валют USD"""
-    symbol = user_currencies[0]
-    logger.info(f"func currency_rates_usd start {symbol}")
-    currency_exchange_rate = requests.get(
-        f"https://v6.exchangerate-api.com/v6/04fed55e4543c3c22311996f/latest/{symbol}"
-    )
-    data = currency_exchange_rate.json()
-    conversion_rates = data.get("conversion_rates")
-
-    if "RUB" in conversion_rates:
-        logger.info(f"func currency_rates_usd end {conversion_rates["RUB"]}")
-        return conversion_rates["RUB"]
-    else:
-        logger.info("func currency_rates_usd end")
-        return None
-
-
-print(currency_rates_usd())
-
-
-def currency_rates_eur() -> Optional[float]:
-    """Курс валют EUR"""
-    symbol = user_currencies[1]
-    logger.info(f"func currency_rates_eur start {symbol}")
-    currency_exchange_rate = requests.get(
-        f"https://v6.exchangerate-api.com/v6/04fed55e4543c3c22311996f/latest/{symbol}"
-    )
-    data = currency_exchange_rate.json()
-    conversion_rates = data.get("conversion_rates")
-
-    if "RUB" in conversion_rates:
-        logger.info(f"func currency_rates_eyr end {conversion_rates["RUB"]}")
-        return conversion_rates["RUB"]
-    else:
-        logger.info("func currency_rates_eur")
-        return None
-
-
-# print(currency_rates_eur())
-
-
-def get_stock_prices(symbols: List[str]) -> List[dict]:
-    """Получение стоимости акций по списку символов компаний."""
-    api_key = os.getenv("API_KEY")
-    stock_prices = []
-    logger.info(f"func get_stock_prices start {symbols}")
-    for symbol in symbols:
-        url = (
-            f"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={symbol}"
-            f"&interval=1min&apikey={api_key}"
-        )
-        response = requests.get(url)
-
-        if response.status_code == 200:
-            data = response.json()
-            time_series = data.get("Time Series (1min)")
-            if time_series:
-
-                latest_time = sorted(time_series.keys())[0]
-                latest_price = time_series[latest_time]["1. open"]
-                stock_prices.append({"stock": symbol, "price": float(latest_price)})
-            else:
-                stock_prices.append({"stock": symbol, "price": None})
-        else:
-            stock_prices.append({"stock": symbol, "price": None})
-    logger.info("func get_stock_prices end")
-    return stock_prices
-
-
-symbols = user_stocks
-result = get_stock_prices(symbols)
-# print(result)
+def main_page(date: str) -> Dict:
+    """Записывает информацию для Главной страницы в файл json"""
+    logger.info("Start")
+    logger.info("Converting Excel file to list of dictionaries")
+    transactions = get_xlsx_data_dict("../data/operations.xlsx")
+    logger.info("Getting greeting")
+    greeting = get_greeting(date)
+    logger.info("Getting card info")
+    cards = show_cards(date, transactions)
+    logger.info("Getting top transactions")
+    top_transcations = show_top_5_transactions(date, transactions)
+    logger.info("Getting currency_rates")
+    currency_rates = fetch_and_show_currency_rates()
+    logger.info("Creating dictionary of dictionaries")
+    main_dict = {}
+    main_dict["greeting"] = greeting
+    main_dict["cards"] = cards
+    main_dict["top_transcations"] = top_transcations
+    main_dict["currency_rates"] = currency_rates
+    logger.info("Writing info into json-file")
+    main_dict_jsons = json.dumps(main_dict)
+    logger.info("Stop")
+    return main_dict_jsons

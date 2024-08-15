@@ -1,20 +1,6 @@
-import json
+import pytest
 
-from src.services import simple_search
+from src.services import investment_bank
 
-
-def test_simple_search():
-    """Тест функции возвращающая JSON-ответ со всеми транзакциями,
-    содержащими запрос в описании или категории."""
-    search_bar = "Супермаркеты"
-    transactions = [
-        {"Описание": "Покупка продуктов", "Категория": "Супермаркеты"},
-        {"Описание": "Оплата счета", "Категория": "Утилиты"},
-        {"Описание": "Покупка одежды", "Категория": "Магазины"},
-    ]
-    expected_result = json.dumps(
-        [{"Описание": "Покупка продуктов", "Категория": "Супермаркеты"}],
-        ensure_ascii=False,
-    )
-
-    assert simple_search(transactions, search_bar) == expected_result
+def test_investment_bank(transactions):
+    assert investment_bank("2021-12", transactions, 50) == '[{"investment_bank": 0}]'

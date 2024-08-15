@@ -1,25 +1,45 @@
+import datetime
 import json
-from typing import List
+import logging
+from typing import Any, Dict, List
 
-from src.config import set_logger
-from src.utils import read_excel
+logger = logging.getLogger("services.log")
+file_handler = logging.FileHandler("services.log", "w")
+file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
-logger = set_logger("services", "services.log")
 
-
-def simple_search(transactions: List[dict], search_bar: str) -> str:
-    """Функция пользователя передающая строку для поиска,
-    возвращается JSON-ответ со всеми транзакциями,
-    содержащими запрос в описании или категории."""
-    logger.info(f"func simple_search start {search_bar}")
-    list_tran = []
+def investment_bank(month: str, transactions: List[Dict[str, Any]], limit: int) -> str:
+    """Рассчитывает сумму на счету инвесткопилки по заданному порогу округления"""
+    logger.info("Start")
+    period = datetime.datetime.strptime(month, "%Y-%m")
+    logger.info("Creating filtered transactions list")
+    transactions_list = []
+    investment_bank_sum = 0
+    logger.info(
+        "Filtering transactions by date and putting their sum into filtered transactions list"
+    )
     for transaction in transactions:
-        if search_bar == transaction["Описание"] or search_bar == transaction["Категория"]:
-            list_tran.append(transaction)
-    logger.info("func simple_search end")
-    return json.dumps(list_tran, ensure_ascii=False)
+        transaction_date = transaction["operation_date"]
+        payment_date = datetime.datetime.strptime(transaction_date, "%d.%m.%Y %H:%M:%S")
+        if payment_date.month == period.month and transaction["payment_sum"] < 0:
+            transactions_list.append(transaction["payment_sum"])
+    logger.info("Calculating remaining sum for investment bank")
+    for transact in transactions_list:
+        sum = abs(transact)
+        diff = (sum // limit + 1) * limit - sum
+        investment_bank_sum += diff
+    logger.info("Creating json-file with sum for investment bank")
+    result_list = []
+    result_dict = {}
+    result_dict["investment_bank"] = round(investment_bank_sum, 2)
+    result_list.append(result_dict)
+    result_list_jsons = json.dumps(result_list)
+    logger.info("Stop")
+    return result_list_jsons
 
-
-search_bar = "Супермаркеты"
-transactions = read_excel("../data/operations.xls")
-print(simple_search(transactions, search_bar))
+# transactions = get_xlsx_data_dict("../data/operations.xlsx")
+# result = investment_bank("2021-12", transactions, 50)
+# print(result)

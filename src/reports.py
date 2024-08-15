@@ -1,49 +1,83 @@
-from datetime import datetime, timedelta
-from typing import Optional
+import datetime
+import json
+import logging
+from datetime import timedelta
+from typing import Any, Callable
 
 import pandas as pd
 
-from src.config import set_logger
-from src.utils import read_excel
+logger = logging.getLogger("report.log")
+file_handler = logging.FileHandler("report.log", "w")
+file_formatter = logging.Formatter("%(asctime)s %(levelname)s: %(message)s")
+file_handler.setFormatter(file_formatter)
+logger.addHandler(file_handler)
+logger.setLevel(logging.INFO)
 
-logger = set_logger("reports", "reports.log")
 
-transactions_data = read_excel("../data/operations.xls")
-transactions = pd.DataFrame(transactions_data)
+def decorator_spending_by_cat(func: Callable) -> Callable:
+    """Логирует результат функции в файл по умолчанию spending_by_cat.json"""
 
-
-def report_to_file_default(func):
-    def wrapper(*args, **kwargs):
-        logger.info("decorator report_to_file_default start")
-        result = func(*args, **kwargs)
-        with open("reports_file.txt", "w") as file:
-            file.write(str(result))
+    def wrapper(*args: Any, **kwargs: Any) -> Any:
+        result = func(*args, **kwargs).to_dict("records")
+        with open("spending_by_cat.json", "w", encoding="utf-8") as f:
+            json.dump(result, f, ensure_ascii=False, indent=4)
         return result
 
-    logger.info("decorator report_to_file_default done")
     return wrapper
 
 
-@report_to_file_default
-def spending_by_category(transactions: pd.DataFrame, category: str, date: Optional[str] = None) -> pd.DataFrame:
-    """Функция возврающая траты по заданной категории
-    за последние три месяца (от переданной даты)."""
-    logger.info(f"start spending by category {category}, {date}")
-    if date is None:
-        parsed_date = datetime.now()
-    else:
-        parsed_date = datetime.strptime(date, "%d.%m.%Y %H:%M:%S")
+def log_spending_by_cat(filename: Any) -> Callable:
+    """Логирует результат функции в указанный файл"""
 
-    transactions = transactions[transactions["Сумма операции"] < 0]
-    transactions = transactions[transactions["Категория"] == category]
-
-    end_data = parsed_date - timedelta(days=90)
-
-    transactions = transactions[pd.to_datetime(transactions["Дата операции"], dayfirst=True) <= parsed_date]
-
-    transactions = transactions[pd.to_datetime(transactions["Дата операции"], dayfirst=True) > end_data]
-    logger.info("spending_by_category done")
-    return pd.DataFrame(transactions)
+    def decorator(func: Callable) -> Callable:
+        def wrapper(*args: Any, **kwargs: Any) -> Any:
+            result = func(*args, **kwargs).to_dict("records")
+            with open(filename, "w") as f:
+                json.dump(result, f, indent=4)
+            return result
+        return wrapper
+    return decorator
 
 
-print(spending_by_category(transactions, "Супермаркеты", "31.12.2021 16:42:04"))
+def filtering_by_date(operations_df: pd.DataFrame, date: str) -> pd.DataFrame:
+    """Возвращает DataFrame за 3 месяца от указанной даты"""
+    logger.info("Converting DF to dictionary")
+    operations = operations_df.to_dict("records")
+    filtered_operations = []
+    logger.info("Creating period for 90 days")
+    current_date = datetime.datetime.strptime(date, "%Y-%m-%d %H:%M:%S")
+    end_date = current_date - timedelta(days=90)
+    logger.info("Filtering operations within 3 months period")
+    for operation in operations:
+        payment_date = datetime.datetime.strptime(
+            str(operation["Дата операции"]), "%d.%m.%Y %H:%M:%S"
+        )
+        if end_date < payment_date < current_date:
+            filtered_operations.append(operation)
+    logger.info("Converting data back to DF")
+    filtered_operations_df = pd.DataFrame(filtered_operations)
+    logger.info("Returning DF to main function")
+    return filtered_operations_df
+
+
+@decorator_spending_by_cat
+def spending_by_category(transactions: pd.DataFrame, category: str, date: str) -> pd.DataFrame:
+    """Возвращает DataFrame по заданной категории за 3 месяца от указанной даты"""
+    logger.info("Start")
+    logger.info(
+        "Creating filtered list by date for last 3 months with another function"
+    )
+    transactions_filtered_by_3_months = filtering_by_date(transactions, date)
+    logger.info("Filtering transactions by category")
+    if transactions_filtered_by_3_months.empty:
+        return pd.DataFrame()  # Возвращаем пустой DataFrame, если нет транзакций
+    category_transcations = transactions_filtered_by_3_months[
+        transactions_filtered_by_3_months["Категория"] == category]
+    logger.info("Returning filtered DF")
+    logger.info("Stop")
+    return category_transcations
+
+
+transcations_df = pd.read_excel("../data/operations_2.xlsx")
+result = spending_by_category(transcations_df, "Каршеринг", "2021-12-31 15:45:34")
+print(result)
