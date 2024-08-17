@@ -84,19 +84,13 @@ def get_card_number_list(transactions: List[Dict[Any, Any]]) -> list:
     return card_list_short
 
 
-def get_operations_sum(
-        time_data: str, transactions: List[Dict[str, Any]], card_number: str
-) -> float:
+def get_operations_sum(time_data: str, transactions: List[Dict[str, Any]], card_number: str) -> float:
     """Выводит общую сумму расходов по номеру карты в формате *1234"""
     month = time_data[5:7] + "." + time_data[:4]
     transactions_sum_list = []
     for transaction in transactions:
         date = str(transaction["payment_date"])
-        if (
-                transaction["card_number"] == card_number
-                and date[3:] == month
-                and transaction["payment_sum"] < 0
-        ):
+        if transaction["card_number"] == card_number and date[3:] == month and transaction["payment_sum"] < 0:
             transactions_sum_list.append(transaction["payment_sum"])
     total_operations_sum = abs(sum(transactions_sum_list))
     return total_operations_sum
@@ -138,9 +132,7 @@ def show_cards(time_data: str, transactions: List[Dict[Any, Any]]) -> List[Dict]
 # print(result)
 
 
-def show_top_5_transactions(
-        time_data: str, transactions: List[Dict[str, Any]]
-) -> List[Dict[str, Any]]:
+def show_top_5_transactions(time_data: str, transactions: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
     """Выводит информацию о 5 топ транзакциях по сумме платежа"""
     for transaction in transactions:
         neg_sum = transaction["payment_sum"]
@@ -178,15 +170,15 @@ def fetch_and_show_currency_rates() -> List[Dict[str, Any]]:
     """Выводит курс валют и записывает из в файл .json"""
     try:
         url = "https://www.cbr-xml-daily.ru/daily_json.js"
-#        payload = {}
+        #        payload = {}
         headers = {"apikey": api_key}
         response = requests.get(url, headers=headers)
         print(response)
         result = response.json()
         print(result)
         exchange_rates_list = []
-        usd_rate = {"currency": "USD", "rate": round(result['Valute']['USD']['Value'], 2)}
-        eur_rate = {"currency": "EUR", "rate": round(result['Valute']['EUR']['Value'], 2)}
+        usd_rate = {"currency": "USD", "rate": round(result["Valute"]["USD"]["Value"], 2)}
+        eur_rate = {"currency": "EUR", "rate": round(result["Valute"]["EUR"]["Value"], 2)}
         exchange_rates_list.append(usd_rate)
         exchange_rates_list.append(eur_rate)
         with open("user_settings.json", "w") as f:

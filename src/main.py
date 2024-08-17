@@ -12,9 +12,7 @@ if __name__ == "__main__":
     result_services = investment_bank("2021-12", transactions, 50)
 
     transcations_df = pd.read_excel("../data/operations_2.xlsx")
-    result_reports = spending_by_category(
-        transcations_df, "Каршеринг", "2021-12-31 15:45:34"
-    )
+    result_reports = spending_by_category(transcations_df, "Каршеринг", "2021-12-31 15:45:34")
 
     print(result_main_page)
     print(result_services)
